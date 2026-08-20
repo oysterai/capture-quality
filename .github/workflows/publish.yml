@@ -7,12 +7,13 @@ on:
 jobs:
   npm:
     runs-on: ubuntu-latest
-    # Skipped until an NPM_TOKEN is added. Consumers install from the git tag
-    # in the meantime, so a missing token is a no-op rather than a broken release.
-    if: ${{ secrets.NPM_TOKEN != '' }}
     permissions:
       contents: read
       id-token: write
+    env:
+      # The `secrets` context is not available in a job-level `if`, so the token
+      # is lifted into `env` here and the publish step guards on that instead.
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,6 +25,13 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npm publish --access public
+      - name: Publish to npm
+        if: env.NPM_TOKEN != ''
+        run: npm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+      - name: No npm token yet
+        if: env.NPM_TOKEN == ''
+        run: |
+          echo "NPM_TOKEN is not set, so nothing was published."
+          echo "Consumers install this tag straight from git, so the release is still usable."
