@@ -9,29 +9,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Lets the runner mint an OIDC token, which is what npm exchanges for
+      # publish rights under trusted publishing. No secret involved.
       id-token: write
-    env:
-      # The `secrets` context is not available in a job-level `if`, so the token
-      # is lifted into `env` here and the publish step guards on that instead.
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Trusted publishing needs npm >= 11.5.1 and Node >= 22.14.0. Node 20
+          # ships npm 10, which silently falls back to token auth.
+          node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: Publish to npm
-        if: env.NPM_TOKEN != ''
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
-      - name: No npm token yet
-        if: env.NPM_TOKEN == ''
-        run: |
-          echo "NPM_TOKEN is not set, so nothing was published."
-          echo "Consumers install this tag straight from git, so the release is still usable."
+      # No NODE_AUTH_TOKEN. The npm CLI detects the OIDC environment and
+      # authenticates against the trusted publisher configured on npmjs.com for
+      # this repo + workflow file.
+      - run: npm publish --access public
