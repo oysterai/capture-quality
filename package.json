@@ -1,6 +1,6 @@
 {
   "name": "@oysterai/capture-quality",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Camera capture-quality gating: blur, exposure, resolution, face presence and distance. Framework-free core plus a browser adapter.",
   "license": "MIT",
   "repository": {
@@ -10,7 +10,8 @@
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
